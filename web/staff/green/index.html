@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>吴凌绿植 · 转人工预警 / 售后处理</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; background:#07130d; color:#eaf7ef;
+    -webkit-font-smoothing:antialiased; min-height:100vh; }
+  .wrap { max-width:960px; margin:0 auto; padding:24px 20px 60px; }
+
+  /* 登录 */
+  .gate { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(800px 500px at 80% 0%, rgba(239,68,68,.12), transparent 60%),#07130d; }
+  .gbox { width:min(360px,90%); text-align:center; }
+  .gbox .leaf { width:60px; height:60px; margin:0 auto 16px; border-radius:16px; display:grid; place-items:center;
+    background:linear-gradient(140deg,#2ee37c,#0f9d5c); font-size:28px; }
+  .gbox h1 { font-size:22px; letter-spacing:2px; margin-bottom:4px; }
+  .gbox .sub { color:#8fd6af; font-size:12px; letter-spacing:2px; margin-bottom:22px; }
+  .gbox input { width:100%; height:44px; margin-bottom:10px; border:1px solid #1f3a2c; border-radius:10px;
+    background:#0c2016; color:#eaf7ef; font-size:14px; padding:0 14px; outline:none; }
+  .gbox input:focus { border-color:#2ee37c; }
+  .gbox button { width:100%; height:44px; border:0; border-radius:10px; background:linear-gradient(90deg,#2ee37c,#0f9d5c);
+    color:#06231a; font-size:15px; font-weight:600; cursor:pointer; letter-spacing:2px; }
+  .err { color:#ef4466; font-size:12px; margin-top:8px; min-height:16px; }
+
+  /* 顶栏 */
+  .head { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .head h1 { font-size:20px; letter-spacing:1px; }
+  .head .me { margin-left:auto; font-size:13px; color:#8fd6af; }
+  .head button { padding:7px 14px; border:1px solid #2a4a38; border-radius:8px; background:transparent;
+    color:#bfe9d1; cursor:pointer; font-size:12px; }
+
+  /* 预警横幅 */
+  .banner { display:none; align-items:center; gap:14px; padding:18px 20px; border-radius:14px; margin-bottom:18px;
+    background:rgba(239,68,68,.14); border:1px solid rgba(239,68,68,.5); }
+  .banner.on { display:flex; }
+  .banner .pulse { width:16px; height:16px; border-radius:50%; background:#ef4466; flex:none;
+    animation:blink 1s infinite; }
+  @keyframes blink { 50% { opacity:.25; } }
+  .banner .txt { font-size:16px; font-weight:600; color:#ffd7d7; }
+  .banner .cnt { margin-left:auto; font-size:34px; font-weight:700; color:#ef4466; }
+
+  /* 售后横幅 */
+  .afsbanner { display:none; align-items:center; gap:14px; padding:18px 20px; border-radius:14px; margin-bottom:18px;
+    background:rgba(245,192,106,.12); border:1px solid rgba(245,192,106,.45); }
+  .afsbanner.on { display:flex; }
+  .afsbanner .ico { font-size:24px; }
+  .afsbanner .txt { font-size:16px; font-weight:600; color:#ffe6b8; }
+  .afsbanner .sub { font-size:12px; color:#c9a86d; margin-top:3px; }
+  .afsbanner .cnt { margin-left:auto; font-size:34px; font-weight:700; color:#f5c06a; }
+
+  /* 板块标题 */
+  .sect { display:flex; align-items:center; gap:10px; margin:26px 0 12px; }
+  .sect h2 { font-size:15px; font-weight:600; letter-spacing:1px; color:#bfe9d1; }
+  .sect .badge { font-size:12px; padding:2px 9px; border-radius:20px; background:#12301f; color:#7df0b0; }
+  .sect .badge.warn { background:rgba(245,192,106,.16); color:#f5c06a; }
+
+  /* 事件列表 */
+  .empty { text-align:center; color:#5f8571; padding:40px 16px; font-size:14px; }
+  .card { border:1px solid #1f3a2c; border-radius:14px; padding:18px 20px; margin-bottom:12px; background:#0c2016; }
+  .card.alarm { border-color:rgba(239,68,68,.6); background:rgba(239,68,68,.06); }
+  .card .top { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .card .site { font-size:15px; font-weight:600; color:#7df0b0; }
+  .card .shop { font-size:13px; color:#bfe9d1; background:#12301f; padding:3px 10px; border-radius:8px; }
+  .card .rule { margin-left:auto; font-size:12px; color:#f5c06a; border:1px solid rgba(245,192,106,.4);
+    padding:2px 8px; border-radius:6px; }
+  .card .q { font-size:15px; line-height:1.6; color:#eaf7ef; margin-bottom:12px; }
+  .card .foot { display:flex; align-items:center; gap:10px; }
+  .card .time { font-size:12px; color:#5f8571; }
+  .card button { margin-left:auto; padding:8px 18px; border:0; border-radius:8px; background:linear-gradient(90deg,#2ee37c,#0f9d5c);
+    color:#06231a; font-weight:600; cursor:pointer; font-size:13px; }
+  .card button.done { background:#1f3a2c; color:#8fd6af; cursor:default; }
+
+  /* 售后卡 */
+  .afs { border:1px solid #2a4a38; border-radius:14px; margin-bottom:12px; background:#0c2016; overflow:hidden; }
+  .afs.urgent { border-color:rgba(239,68,68,.55); box-shadow:0 0 0 1px rgba(239,68,68,.12) inset; }
+  .afs .hd { display:flex; align-items:center; gap:10px; padding:14px 18px 10px; flex-wrap:wrap; }
+  .afs .shop { font-size:14px; font-weight:600; color:#7df0b0; }
+  .afs .tag { font-size:12px; padding:2px 8px; border-radius:6px; background:#12301f; color:#9fe0bb; }
+  .afs .tag.warn { background:rgba(245,192,106,.16); color:#f5c06a; }
+  .afs .tag.red { background:rgba(239,68,68,.18); color:#ff9f9f; }
+  .afs .cd { margin-left:auto; font-size:13px; color:#8fd6af; font-variant-numeric:tabular-nums; }
+  .afs .cd.hot { color:#ff8a8a; font-weight:600; }
+  .afs .bd { display:flex; gap:14px; padding:0 18px 14px; }
+  .afs .pic { width:66px; height:66px; border-radius:10px; object-fit:cover; background:#12301f; flex:none; }
+  .afs .info { flex:1; min-width:0; }
+  .afs .gname { font-size:14px; line-height:1.5; color:#eaf7ef; margin-bottom:4px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .afs .meta { font-size:12px; color:#7fa891; line-height:1.7; }
+  .afs .money { color:#ffb4b4; font-weight:600; }
+  .afs .ft { display:flex; align-items:center; gap:8px; padding:12px 18px; border-top:1px solid #163024; flex-wrap:wrap; }
+  .afs .ft button { border:0; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:600;
+    cursor:pointer; background:#1f3a2c; color:#bfe9d1; }
+  .afs .ft button.ok { background:linear-gradient(90deg,#2ee37c,#0f9d5c); color:#06231a; }
+  .afs .ft button.ghost { background:transparent; border:1px solid #2a4a38; color:#8fd6af; }
+  .afs .ft .sp { margin-left:auto; }
+  .afs .more { display:none; padding:0 18px 14px; font-size:12px; color:#9fb8a8; line-height:1.9; }
+  .afs .more.on { display:block; }
+  .afs .more b { color:#bfe9d1; font-weight:500; }
+  .afs .res { font-size:12px; padding:2px 8px; border-radius:6px; background:#12301f; color:#8fd6af; }
+  .afs .res.bad { background:rgba(239,68,68,.16); color:#ff9f9f; }
+
+  /* 确认弹层 */
+  .mask { display:none; position:fixed; inset:0; background:rgba(3,10,7,.72); z-index:50;
+    align-items:center; justify-content:center; padding:20px; }
+  .mask.on { display:flex; }
+  .dlg { width:min(420px,100%); background:#0c2016; border:1px solid #2a4a38; border-radius:16px; padding:22px; }
+  .dlg h3 { font-size:16px; margin-bottom:10px; }
+  .dlg p { font-size:13px; color:#bfe9d1; line-height:1.8; margin-bottom:6px; }
+  .dlg .row { display:flex; gap:10px; margin-top:18px; }
+  .dlg .row button { flex:1; height:40px; border:0; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; }
+  .dlg .row .c { background:#1f3a2c; color:#bfe9d1; }
+  .dlg .row .y { background:linear-gradient(90deg,#2ee37c,#0f9d5c); color:#06231a; }
+  .toast { position:fixed; left:50%; bottom:40px; transform:translateX(-50%); background:#12301f;
+    border:1px solid #2a4a38; color:#bfe9d1; padding:12px 22px; border-radius:10px; font-size:13px;
+    opacity:0; transition:.25s; pointer-events:none; z-index:60; }
+  .toast.on { opacity:1; }
+.afs-success-link{border:1px solid #3b7557;background:#1d4835;color:#d7f8e4;border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+.afs-success-link:hover,.afs-success-link:focus-visible{background:#285c44;outline:1px solid #98d6b2}
+.afs-success-link:disabled{opacity:.62;cursor:default}
+
+/* yujing-ui-v3: compact, responsive workspace, no third-party assets */
+:root{color-scheme:dark;--line:#253f35;--muted:#9ab6a8;--surface:#10251c;--mint:#85e2b3}
+body{background:radial-gradient(ellipse at 15% 0%,#143228 0%,#091710 50%);font-size:14px;line-height:1.6}
+.wrap{max-width:1440px;padding:30px 32px 60px}.head{gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.head h1{font-size:26px;letter-spacing:.3px}.eyebrow{font-size:11px;color:#80b59b;letter-spacing:2px;margin-bottom:2px}
+.heading-sub{font-size:13px;color:var(--muted);margin-top:3px}.head .me{border:1px solid var(--line);border-radius:20px;padding:4px 12px}
+.head button,.toolbar button,.pager button,.sound-panel button{border:1px solid #345548;border-radius:9px;background:#142d22;color:#d8eee2;padding:9px 14px;cursor:pointer;font:inherit}
+button:hover{filter:brightness(1.12)}button:disabled{opacity:.4;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #8fe6b7;outline-offset:3px}
+.sound-panel{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#10251cbf;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:22px}
+.sound-panel label{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}.sound-panel input{width:116px;accent-color:#70d5a1}
+#soundHint{font-size:12px;color:var(--muted);flex:1;min-width:210px}.sound-panel output{min-width:32px;font-variant-numeric:tabular-nums}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px}
+.metric{background:linear-gradient(120deg,#173428,#10251c);border:1px solid var(--line);border-radius:14px;padding:18px 22px;position:relative}
+.metric label{display:block;color:var(--muted);font-size:13px}.metric strong{display:block;font-size:32px;line-height:1.3;margin:7px 0 2px;font-variant-numeric:tabular-nums;color:#d9f7e6}.metric small{font-size:11px;color:#90ac9d}
+.metric.attention strong{color:#f4c58c}.metric.action strong{color:#ffa5a5}
+.metric.action{font:inherit;text-align:left;cursor:pointer;color:inherit;width:100%}.metric.action:hover{border-color:#89ba9f;background:#1c3b2d}.metric.action .metric-label{display:block;color:var(--muted);font-size:13px}.metric.action .metric-link{color:#a5ecc3}#alertGroup{scroll-margin-top:18px}#alertHeading:focus{outline:none}
+.toolbar{padding:18px 20px;background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:20px}
+.filters{display:grid;grid-template-columns:minmax(180px,1fr) minmax(145px,.75fr) minmax(260px,2fr);gap:14px;align-items:end}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}.field select,.field input{width:100%;border:1px solid #355247;border-radius:9px;background:#0b1d15;color:#e8f4ed;min-height:42px;padding:8px 12px;font:inherit}
+.search-row{display:flex;gap:8px}.search-row input{min-width:0}.search-row button{white-space:nowrap;background:#237b53;border-color:#348f65;color:#f4fff7}
+.toolbar-bottom{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:16px;padding-top:12px;font-size:12px;color:var(--muted)}
+#syncStatus{margin-left:auto;font-size:12px;color:#9bcdb1}.sync-error{color:#f2b783!important}
+.sect{margin:26px 0 14px}.sect h2{font-size:18px;color:#e7f4ed}.sect .badge{font-size:12px}.section-note{margin-left:auto;font-size:12px;color:var(--muted)}
+.banner,.afsbanner{padding:12px 18px;border-radius:12px;margin-bottom:14px}.banner .txt,.afsbanner .txt{font-size:14px}.banner .cnt,.afsbanner .cnt{font-size:23px}.afsbanner .sub{color:#c4b18d}.banner .pulse{width:9px;height:9px;animation:none}
+#afsList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}#afsList>.empty{grid-column:1/-1}
+.afs{margin:0;border-color:var(--line);border-radius:14px;background:var(--surface);box-shadow:0 8px 24px #00000010}
+.afs .hd{padding:16px 18px 12px;gap:7px}.afs .shop{color:#8ce3b4}.afs .tag{font-size:11px}.afs .bd{gap:12px;padding:0 18px 16px}.afs .pic{width:72px;height:72px;border-radius:10px}.afs .gname{font-size:14px;color:#e0eee5;line-height:1.65}.afs .meta{color:#a3bbaf;font-size:12px;line-height:1.85;overflow-wrap:anywhere}.afs .money{color:#ffb8a0;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.afs .ft{background:#0c1f17;border-color:var(--line);padding:12px 18px}.afs .ft button{padding:7px 12px;font-weight:500}.afs .more{background:#0d2118;padding:14px 18px;border-top:1px solid var(--line);overflow-wrap:anywhere}.afs .more:not(.on){display:none}.afs .more b{color:#c0d7ca}.afs .evidence{padding:0 18px 12px!important}
+.card.alarm{border-color:#704439;background:#2b2319}.card .q{font-size:14px}.card .time{color:#a7bbaf}.card .meta{color:#c6d5cb;font-size:13px}.card .foot{margin-top:12px}.empty{border:1px dashed #304d3e;background:#10251c80;border-radius:12px;padding:36px;color:#9ab9a7}
+.pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;padding:16px 0;color:var(--muted);font-size:12px}.pager span{margin-right:auto}.pager select{background:#10251c;border:1px solid #345548;color:#d8eee2;padding:7px;border-radius:8px}.afs-success-link{font-size:12px;border-radius:20px;padding:4px 12px;margin:0!important}
+.dlg{box-shadow:0 24px 80px #0008}.dlg p{overflow-wrap:anywhere}.toast{max-width:90vw}
+.afsbanner.on{display:none}.head{margin-bottom:18px}.sound-panel{margin-bottom:16px}.metrics{margin-bottom:18px}.metric{padding:14px 20px}.toolbar{margin-bottom:14px}.alert-empty{display:none}
+@media(min-width:1250px){#alertList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}#alertList>.empty{grid-column:1/-1}.card{margin-bottom:0}}
+@media(max-width:900px){.wrap{padding:22px 20px 40px}.filters{grid-template-columns:1fr 1fr}.field.search{grid-column:1/-1}#afsList{grid-template-columns:1fr}.head h1{font-size:23px}.section-note{display:none}}
+@media(max-width:520px){.wrap{padding:18px 12px 32px}.metrics{gap:8px}.metric{padding:12px}.metric strong{font-size:26px}.metric small{display:none}.head .me{margin-left:0}.head .brand{width:100%}.toolbar{padding:14px}.filters{gap:10px;grid-template-columns:1fr}.field.search{grid-column:auto}.search-row{flex-wrap:wrap}.search-row input{flex:1;min-width:120px}#syncStatus{margin-left:0}.sound-panel{gap:10px}.afs .hd{padding:12px}.afs .bd{padding:0 12px 12px}.afs .pic{width:56px;height:56px}.afs .ft{padding:10px 12px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+</style>
+</head>
+<body>
+  <div class="gate" id="gate">
+    <div class="gbox">
+      <div class="leaf">🌱</div>
+      <h1>吴凌绿植 · 预警售后</h1>
+      <div class="sub">人工客服 · 专盯自己负责的电脑</div>
+      <input id="u" type="text" placeholder="账号" />
+      <input id="p" type="password" placeholder="密码" />
+      <button id="loginBtn">登 录</button>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+
+  <div class="wrap" id="main" style="display:none">
+    <div class="head">
+      <div class="brand"><div class="eyebrow">WULING · SERVICE DESK</div><h1>吴凌绿植 · 售后与预警工作台</h1><div class="heading-sub">按店铺有序处理，让每一笔售后都有着落</div></div>
+      <span class="me" id="me"></span>
+
+       <button id="logout">退出</button>
+    </div>
+
+    <div class="sound-panel">
+      <button id="soundEnable" type="button">开启提醒音</button>
+      <button id="soundMute" type="button">关闭提醒音</button>
+      <label for="soundVolume">音量 <input id="soundVolume" type="range" min="0" max="100" step="5"><output id="volumeValue"></output></label>
+      <button id="soundPreview" type="button">试听铃声</button><span id="soundHint" role="status"></span>
+    </div>
+    <div class="metrics" aria-label="全部负责店铺总览">
+      <button type="button" class="metric action" id="showAllAlerts" aria-label="查看全部待人工明细" aria-controls="alertGroup"><span class="metric-label">待人工跟进</span><strong id="statAlerts">0</strong><small class="metric-link">查看全部明细 → 不受筛选影响</small></button>
+      <div class="metric attention"><label>待处理售后</label><strong id="statPending">0</strong><small>正式售后单 · 按时跟进</small></div>
+      <div class="metric"><label>已同步售后</label><strong id="statTotal">0</strong><small>含处理历史与退款完成记录</small></div>
+    </div>
+    <div class="toolbar"><div class="filters">
+      <div class="field"><label for="shopFilter">所属店铺</label><select id="shopFilter"><option value="">全部负责店铺</option></select></div>
+      <div class="field"><label for="afsFilter">售后状态</label><select id="afsFilter">
+        <option value="pending">待处理</option><option value="all">全部记录</option><option value="refund_only">仅退款</option>
+        <option value="return_refund">退货退款</option><option value="platform">平台已处理</option><option value="refund_success">退款成功</option><option value="done">已处理 / 历史</option>
+      </select></div>
+      <form id="searchForm" class="field search"><label for="orderSearch">查找订单</label><div class="search-row"><input id="orderSearch" maxlength="100" placeholder="订单号 / 售后编号 / 商品关键词" autocomplete="off"><button type="submit">查询</button><button type="button" id="resetFilters">重置</button></div></form>
+    </div><div class="toolbar-bottom"><span>店铺与查询作用于下方列表；状态仅筛选售后记录</span><span id="syncStatus" role="status">等待同步</span><button type="button" id="refreshList">刷新</button></div></div>
+    <div class="banner" id="banner">
+      <span class="pulse"></span>
+      <span class="txt">有单转人工，请立即处理</span>
+      <span class="cnt" id="cnt">0</span>
+    </div>
+
+    <div class="afsbanner" id="afsbanner">
+      <span class="ico">📦</span>
+      <div>
+        <div class="txt" id="afsTip">有售后单等着处理</div>
+        <div class="sub" id="afsSub">核对买家原因与证据后处理，以平台实际处理时限为准</div>
+      </div>
+      <span class="cnt" id="afscnt">0</span>
+    </div>
+
+    <div id="alertGroup"><div class="sect"><h2 id="alertHeading" tabindex="-1">人工跟进</h2><span class="section-note">仅真正需要人工处理的会话 · 提醒音不受当前筛选影响</span></div>
+    <div id="alertList"></div><div class="pager"><span id="alertPageInfo"></span><button id="alertPrev" type="button">上一页</button><button id="alertNext" type="button">下一页</button></div></div>
+
+    <div class="sect">
+      <h2>售后记录</h2>
+      <span class="badge warn" id="afsBadge">0 单</span>
+    </div>
+    <button type="button" id="afsRefundSuccess" class="afs-success-link">退款成功 · 0 单</button><div style="height:14px"></div>
+    <div id="afsList"></div><div class="pager"><span id="afsPageInfo"></span><label for="pageSize">每页</label><select id="pageSize"><option>10</option><option selected>20</option><option>50</option></select><button id="afsPrev" type="button">上一页</button><button id="afsNext" type="button">下一页</button></div>
+  </div>
+
+  <div class="mask" id="mask">
+    <div class="dlg">
+      <h3 id="dlgTitle">确认同意退款</h3>
+      <p id="dlgBody"></p>
+      <div class="row">
+        <button class="c" id="dlgCancel">取消</button>
+        <button class="y" id="dlgOk">确认</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var K = localStorage.getItem('yj_token') || '';
+  var NAME = localStorage.getItem('yj_name') || '';
+  var ROLE = localStorage.getItem('yj_role') || '';
+  var AFS = [];
+  var afsPage=1, alertPage=1, afsMeta={}, alertMeta={}, latestEvents=[], latestSites=[], queryVersion=0, currentLoad=null;
+  var chosenShop='', searchTerm='', openDetails=new Set(), previousShopOptions='', showAllHandoffs=false;
+  function requestParams(page,size){
+    return '&mall_id='+encodeURIComponent(chosenShop)+'&search='+encodeURIComponent(searchTerm)+'&page='+page+'&page_size='+size;
+  }
+  function pager(prefix,meta){
+    document.getElementById(prefix+'PageInfo').textContent='第 '+(meta.page||1)+' / '+(meta.pages||1)+' 页 · 共 '+(meta.total||0)+' 条';
+    document.getElementById(prefix+'Prev').disabled=!(meta.page>1);
+    document.getElementById(prefix+'Next').disabled=!(meta.page<meta.pages);
+  }
+  function shopOptions(){
+    var map=new Map();
+    (afsMeta.shops||[]).concat(alertMeta.shops||[]).forEach(function(s){if(s.mall_id)map.set(String(s.mall_id),s.shop_name||s.mall_id);});
+    var select=document.getElementById('shopFilter');
+    var options='<option value="">全部负责店铺</option>';
+    map.forEach(function(name,id){options+='<option value="'+esc(id)+'">'+esc(name)+' · '+esc(id)+'</option>';});
+    if(chosenShop&&!map.has(chosenShop))chosenShop='';
+    if(previousShopOptions!==options){select.innerHTML=options;previousShopOptions=options;}
+    select.value=chosenShop;
+  }
+  function filtersChanged(){
+    showAllHandoffs=false;
+    chosenShop=document.getElementById('shopFilter').value;
+    searchTerm=document.getElementById('orderSearch').value.trim();
+    afsPage=alertPage=1; queryVersion++; openDetails.clear(); load(true);
+  }
+  document.getElementById('shopFilter').onchange=filtersChanged;
+  document.getElementById('afsFilter').onchange=filtersChanged;
+  document.getElementById('pageSize').onchange=filtersChanged;
+  document.getElementById('searchForm').onsubmit=function(e){e.preventDefault();filtersChanged();};
+  document.getElementById('resetFilters').onclick=function(){
+    document.getElementById('orderSearch').value='';document.getElementById('shopFilter').value='';
+    document.getElementById('afsFilter').value='pending';filtersChanged();
+  };
+  document.getElementById('refreshList').onclick=function(){load(true);};
+  document.getElementById('showAllAlerts').onclick=async function(){
+    chosenShop=searchTerm='';showAllHandoffs=true;
+    document.getElementById('shopFilter').value='';
+    document.getElementById('orderSearch').value='';
+    alertPage=afsPage=1;queryVersion++;openDetails.clear();
+    var version=queryVersion, group=document.getElementById('alertGroup');
+    group.className='';
+    document.getElementById('alertList').innerHTML='<div class="empty">正在读取全部待人工明细…</div>';
+    group.scrollIntoView({behavior:'smooth',block:'start'});
+    document.getElementById('alertHeading').focus({preventScroll:true});
+    var ok=await load(true);
+    if(version===queryVersion&&ok===false)document.getElementById('alertList').innerHTML='<div class="empty">读取失败，请点击上方刷新重试。</div>';
+  };
+  document.getElementById('afsRefundSuccess').onclick=function(){document.getElementById('afsFilter').value='refund_success';filtersChanged();};
+  ['afs','alert'].forEach(function(prefix){
+    ['Prev','Next'].forEach(function(direction){
+      document.getElementById(prefix+direction).onclick=function(){
+        var step=direction==='Prev'?-1:1;
+        if(prefix==='afs')afsPage+=step;else alertPage+=step;
+        queryVersion++;openDetails.clear();load(true);
+      };
+    });
+  });
+  async function load(force){
+    if(!K||reconcileTab())return;
+    if(currentLoad){if(!force)return;currentLoad.abort();}
+    var controller=new AbortController(), version=queryVersion, token=K;
+    currentLoad=controller;
+    var timeout=setTimeout(function(){controller.abort();},12000);
+    document.getElementById('syncStatus').textContent='正在同步…';
+    async function get(url){
+      var r=await fetch(q(url),{signal:controller.signal,cache:'no-store'});
+      if(r.status===401)throw new Error('登录已过期，请重新登录');
+      var j=await r.json();if(!j.ok)throw new Error(j.error||'同步失败');return j;
+    }
+    var size=document.getElementById('pageSize').value;
+    var results=await Promise.allSettled([
+      get('/api/alert/list?ui=2'+requestParams(alertPage,10)),
+      get('/api/aftersale/list?pending=0&view='+encodeURIComponent(document.getElementById('afsFilter').value)+requestParams(afsPage,size))
+    ]);
+    clearTimeout(timeout);
+    if(currentLoad!==controller||version!==queryVersion||token!==K||reconcileTab())return;
+    currentLoad=null;
+    if(results.some(function(r){return r.status==='rejected'&&/登录|权限/.test(r.reason.message||'');})){
+      endSession('登录已过期，请重新登录');return false;
+    }
+    var scopesAgree=results.every(function(r){return r.status==='fulfilled';});
+    if(scopesAgree&&ROLE!=='boss'){
+      function ids(meta){return JSON.stringify((meta.shops||[]).map(function(x){return String(x.mall_id);}).sort());}
+      scopesAgree=ids(results[0].value)===ids(results[1].value);
+    }
+    if(!scopesAgree){
+      clearSessionView();document.getElementById('me').textContent=NAME;showMain();
+      document.getElementById('syncStatus').textContent='店铺范围暂未核实，明细已隐藏，正在重试';
+      document.getElementById('syncStatus').classList.add('sync-error');return false;
+    }
+    var failed=[];
+    if(results[0].status==='fulfilled'){
+      alertMeta=results[0].value;alertPage=alertMeta.page||1;latestEvents=alertMeta.events||[];latestSites=alertMeta.sites||[];
+      render(latestEvents,latestSites);pager('alert',alertMeta);
+    }else failed.push('人工预警');
+    if(results[1].status==='fulfilled'){
+      afsMeta=results[1].value;afsPage=afsMeta.page||1;AFS=afsMeta.items||[];
+      renderAfs(AFS);pager('afs',afsMeta);
+      document.getElementById('statTotal').textContent=(afsMeta.summary||{}).total||0;
+      document.getElementById('statPending').textContent=(afsMeta.summary||{}).pending||0;
+    }else failed.push('售后记录');
+    shopOptions();
+    document.getElementById('syncStatus').textContent=failed.length?failed.join('、')+'同步失败，保留上次数据 · 自动重试':'已同步 '+new Date().toLocaleTimeString('zh-CN',{hour12:false});
+    document.getElementById('syncStatus').classList.toggle('sync-error',!!failed.length);
+
+    return results[0].status==='fulfilled';
+  }
+
+
+  function q(p){ return p + (p.indexOf('?')>=0?'&':'?') + 'token=' + encodeURIComponent(K); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function tstr(ts){ var d=new Date(ts*1000); function p(n){return ('0'+n).slice(-2);}
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+  function safePhoto(url){
+    try { var u = new URL(url); return u.protocol==='https:' && !u.username && !u.password && !u.port &&
+      /(^|\.)(pddugc\.com|pddpic\.com|yangkeduo\.com)$/i.test(u.hostname) ? u.href : ''; }
+    catch(e){ return ''; }
+  }
+  function photos(list){
+    if(!Array.isArray(list)) return '';
+    var urls=list.map(safePhoto).filter(Boolean);
+    if(!urls.length) return '';
+    return '<div class="evidence" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0" aria-label="买家举证图片">'+
+      urls.map(function(url,i){return '<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" title="查看原图">'+
+      '<img src="'+esc(url)+'" alt="买家举证 '+(i+1)+'" loading="lazy" referrerpolicy="no-referrer" style="width:82px;height:82px;object-fit:cover;border-radius:7px"></a>';}).join('')+'</div>';
+  }
+  function refundSucceeded(it){
+    return !!it.record_complete&&/(?:^|[，,、：:；;\s])(?:平台(?:已退款|退款成功|完成退款|判责退款|执行退款)|已退款|退款成功|退款完成)(?:$|[，,、。！：:；;\s])/.test(String(it.title||'').trim());
+  }
+  function yuan(f){ return '¥' + (Number(f)||0).toFixed(2); }
+
+  // 倒计时：后端给的是「上报那一刻」的剩余秒数，前端按上报时间差继续减，
+  // 这样不用每 5 秒重新拉详情也不会越数越大。
+  function left(it){
+    var base = Number(it.expire_remain)||0;
+    if(!base) return 0;
+    var ago = Math.floor(Date.now()/1000) - (Number(it.ts)||0);
+    var v = base - Math.max(0, ago);
+    return v>0 ? v : 0;
+  }
+  function cdText(s){
+    if(!s) return '';
+    var d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
+    if(d>0) return d+'天'+h+'时'+m+'分';
+    if(h>0) return h+'时'+m+'分'+(s%60)+'秒';
+    return m+'分'+(s%60)+'秒';
+  }
+
+  // Browser preference only; the server remains the authority for resolved/unresolved events.
+  function prefGet(k,fallback){try{var v=localStorage.getItem(k);return v===null?fallback:v;}catch(e){return fallback;}}
+  function prefSet(k,v){try{localStorage.setItem(k,String(v));}catch(e){}}
+  var soundEnabled=prefGet('yj_sound_enabled_v3','0')==='1';
+  var soundVolume=Math.max(0,Math.min(1,Number(prefGet('yj_sound_volume_v3','0.75'))||0));
+  var alarmCtx=null, activeAlarm=[], pendingAlarmCount=0, lastAlarmAt=0, alarmSyncedAt=0, alarmMarker='', soundedMarker='';
+  var resolvedHere=new Set(), pendingAlerts=[];
+  function stopAlarm(){
+    if(!alarmCtx)return;
+    activeAlarm.forEach(function(note){try{
+      note.gain.gain.cancelScheduledValues(alarmCtx.currentTime);
+      note.gain.gain.setTargetAtTime(0.0001,alarmCtx.currentTime,0.02);
+      note.osc.stop(alarmCtx.currentTime+0.08);
+    }catch(e){}});activeAlarm=[];
+  }
+  function soundUI(){
+    var ready=soundEnabled&&alarmCtx&&alarmCtx.state==='running';
+    document.getElementById('soundEnable').textContent=!soundEnabled?'开启提醒音':ready?'提醒音常开':'提醒音已开启 · 点击恢复播放';
+    document.getElementById('soundEnable').setAttribute('aria-pressed',String(soundEnabled));
+    document.getElementById('soundMute').disabled=!soundEnabled;
+    document.getElementById('soundHint').textContent=!soundEnabled?'声音已关闭':ready?'持续监听，不会自动关闭 · 有待人工预警每 45 秒提醒':'开启设置已保留；浏览器暂未允许播放，点击页面即可恢复';
+    document.getElementById('soundVolume').value=Math.round(soundVolume*100);
+    document.getElementById('volumeValue').textContent=Math.round(soundVolume*100)+'%';
+  }
+  function alarmTone(preview){
+    if((!soundEnabled&&!preview)||!alarmCtx||alarmCtx.state!=='running'||soundVolume===0)return false;
+    try{
+      stopAlarm();var t=alarmCtx.currentTime+0.025;
+      // Smooth sine-wave chime, two groups, no harsh siren or abrupt attack.
+      [523.25,659.25,783.99,523.25,659.25,783.99].forEach(function(hz,i){
+        var o=alarmCtx.createOscillator(),g=alarmCtx.createGain(),start=t+i*0.22+(i>=3?0.3:0);
+        o.type='sine';o.frequency.setValueAtTime(hz,start);o.connect(g);g.connect(alarmCtx.destination);
+        g.gain.setValueAtTime(0.0001,start);g.gain.exponentialRampToValueAtTime(Math.max(0.0002,0.25*soundVolume),start+0.06);
+        g.gain.exponentialRampToValueAtTime(0.0001,start+0.65);o.start(start);o.stop(start+0.7);
+        var note={osc:o,gain:g};activeAlarm.push(note);
+        o.onended=function(){try{o.disconnect();g.disconnect();}catch(e){}activeAlarm=activeAlarm.filter(function(n){return n!==note;});};
+      });return true;
+    }catch(e){return false;}
+  }
+  function maybeAlarm(){
+    if(!pendingAlarmCount||!soundEnabled||Date.now()-alarmSyncedAt>30000)return;
+    if(alarmMarker!==soundedMarker||Date.now()-lastAlarmAt>=45000){
+      if(alarmTone(false)){lastAlarmAt=Date.now();soundedMarker=alarmMarker;}
+    }
+  }
+  function syncAlarm(events){
+    pendingAlerts=events;
+    var summary=alertMeta.alarm||{total:events.length,latest_id:events.length?events[0].id:0};
+    pendingAlarmCount=Number(summary.total)||0;alarmSyncedAt=Date.now();
+    alarmMarker=String(summary.latest_id||0);
+    if(!pendingAlarmCount){stopAlarm();soundedMarker='';return;}
+    maybeAlarm();
+  }
+  async function resumeSound(){
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC){document.getElementById('soundHint').textContent='当前浏览器不支持提醒音';return false;}
+    try{
+      if(!alarmCtx||alarmCtx.state==='closed'){
+        alarmCtx=new AC();alarmCtx.onstatechange=function(){soundUI();if(alarmCtx.state==='running')maybeAlarm();};
+      }
+      if(alarmCtx.state==='suspended'){
+        // Never let a blocked autoplay resume promise stall data loading.
+        var resumed=alarmCtx.resume();if(resumed&&resumed.catch)resumed.catch(function(){soundUI();});
+      }
+      soundUI();return alarmCtx.state==='running';
+    }catch(e){soundUI();return false;}
+  }
+  document.getElementById('soundEnable').onclick=async function(){
+    soundEnabled=true;prefSet('yj_sound_enabled_v3','1');await resumeSound();soundUI();maybeAlarm();
+  };
+  document.getElementById('soundMute').onclick=function(){
+    soundEnabled=false;prefSet('yj_sound_enabled_v3','0');stopAlarm();soundUI();
+  };
+  document.getElementById('soundPreview').onclick=async function(){
+    await resumeSound();if(!alarmTone(true))toast('声音尚未就绪，请检查浏览器或系统音量后重试');
+  };
+  document.getElementById('soundVolume').oninput=function(){
+    soundVolume=Number(this.value)/100;prefSet('yj_sound_volume_v3',soundVolume);stopAlarm();soundUI();
+  };
+  async function gestureRestore(e){
+    // Clicking the toggle is handled by its own listener, not by this restore path.
+    if(e.target&&e.target.closest&&e.target.closest('#soundEnable,#soundPreview,#soundMute'))return;
+    if(soundEnabled&&(!alarmCtx||alarmCtx.state!=='running')){await resumeSound();maybeAlarm();}
+  }
+  document.addEventListener('pointerdown',gestureRestore);
+  document.addEventListener('keydown',gestureRestore);
+  window.addEventListener('storage',function(e){
+    if(e.key==='yj_sound_enabled_v3'){soundEnabled=e.newValue==='1';if(!soundEnabled)stopAlarm();soundUI();}
+    if(e.key==='yj_sound_volume_v3'){soundVolume=Math.max(0,Math.min(1,Number(e.newValue)||0));soundUI();}
+  });
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&K){load();if(soundEnabled)resumeSound();}});
+  window.addEventListener('pageshow',function(){if(soundEnabled)resumeSound();});
+  window.addEventListener('focus',function(){if(soundEnabled)resumeSound();});
+  soundUI();if(soundEnabled)resumeSound();
+  setInterval(maybeAlarm,5000);
+
+  function clearSessionView(){
+    showLogin();
+    queryVersion++; if(currentLoad){currentLoad.abort();currentLoad=null;}
+    AFS=[];afsMeta={};alertMeta={};latestEvents=[];latestSites=[];
+    chosenShop=searchTerm=previousShopOptions='';openDetails.clear();resolvedHere.clear();
+    afsPage=alertPage=1;showAllHandoffs=false;pending=null;pendingAlerts=[];
+    pendingAlarmCount=lastAlarmAt=alarmSyncedAt=0;alarmMarker=soundedMarker='';stopAlarm();
+    document.getElementById('mask').className='mask';
+    ['dlgBody','dlgTitle','toast','me','p','syncStatus','alertList','afsList'].forEach(function(id){
+      var el=document.getElementById(id);if(id==='p')el.value='';else el.textContent='';
+    });
+    document.getElementById('orderSearch').value='';document.getElementById('afsFilter').value='pending';
+    document.getElementById('statTotal').textContent='0';document.getElementById('statPending').textContent='0';
+    shopOptions();render([],[]);renderAfs([]);pager('alert',{});pager('afs',{});
+  }
+  function endSession(msg){
+    var old=K;K=NAME=ROLE='';clearSessionView();
+    if(localStorage.getItem('yj_token')===old){
+      ['yj_token','yj_name','yj_role'].forEach(function(k){localStorage.removeItem(k);});
+    }
+    document.getElementById('err').textContent=msg||'';
+  }
+  function reconcileTab(){if(K!==(localStorage.getItem('yj_token')||'')){K='';clearSessionView();location.reload();return true;}return false;}
+  window.addEventListener('storage',function(e){if(e.key==='yj_token'||e.key===null)reconcileTab();});
+  window.addEventListener('pageshow',reconcileTab);
+  function showLogin(){ document.getElementById('gate').style.display='flex'; document.getElementById('main').style.display='none'; }
+  function showMain(){ document.getElementById('gate').style.display='none'; document.getElementById('main').style.display='block'; }
+  var toastT;
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.className='toast on';
+    clearTimeout(toastT); toastT=setTimeout(function(){ t.className='toast'; }, 2600);
+  }
+
+  document.getElementById('loginBtn').onclick = async function(){
+    var u=document.getElementById('u').value.trim(), p=document.getElementById('p').value;
+    if(!u||!p){ document.getElementById('err').textContent='请输入账号和密码'; return; }
+    try {
+      var r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+      var j = await r.json();
+      if(!j.ok){ document.getElementById('err').textContent=j.error||'登录失败'; return; }
+      clearSessionView();K = j.token; localStorage.setItem('yj_token',K);
+      NAME = (j.user&&j.user.name)||(j.user&&j.user.username)||u; localStorage.setItem('yj_name',NAME);
+      ROLE = (j.user&&j.user.role)||'staff'; localStorage.setItem('yj_role',ROLE);
+      document.getElementById('me').textContent = NAME;
+      showMain(); load();
+    }catch(e){ document.getElementById('err').textContent='网络错误'; }
+  };
+  document.getElementById('p').onkeydown = function(e){ if(e.key==='Enter') document.getElementById('loginBtn').click(); };
+  document.getElementById('u').onkeydown = function(e){ if(e.key==='Enter') document.getElementById('loginBtn').click(); };
+  document.getElementById('logout').onclick=function(){endSession('');};
+
+  function render(events, sites){
+    events=events.filter(function(ev){return !resolvedHere.has(String(ev.id));});
+    var box = document.getElementById('alertList');
+    var n = Number((alertMeta.alarm||{}).total)||0;
+    document.getElementById('alertGroup').className=(n||showAllHandoffs)?'':'alert-empty';
+    document.getElementById('statAlerts').textContent=n;
+    document.getElementById('banner').className = 'banner' + (n?' on':'');
+    document.getElementById('cnt').textContent = n;
+    syncAlarm(events);
+    if(!events.length){
+      if(ROLE && ROLE !== 'boss' && (!sites || !sites.length)){
+        box.innerHTML = '<div class="empty">还没有分给你的电脑<br>' +
+          '<span style="font-size:13px;color:#9fb8a8">让老板在后台「站点」里把这台电脑分配给你，之后转人工这里会自动爆红</span></div>';
+      } else {
+        box.innerHTML = '<div class="empty">当前筛选下没有待人工跟进的会话</div>';
+      }
+      return;
+    }
+    box.innerHTML = events.map(function(e){
+      return '<div class="card alarm" data-id="'+e.id+'">'+
+        '<div class="top"><span class="site">'+esc(e.site_name||e.site_id)+'</span>'+
+        (e.shop_name?'<span class="shop">'+esc(e.shop_name)+'</span>':'')+
+        (e.rule?'<span class="rule">'+esc(e.rule)+'</span>':'')+'</div>'+
+        '<div class="q">'+esc(e.question||'(无文字)')+'</div>'+
+        (e.case_kind==='aftersale_chat'?'<div class="meta">单号：'+esc(e.order_sn||'')+
+           ' · '+esc(e.request_type||'售后')+'<br>买家原因：'+esc(e.reason||'买家未说明')+'</div>'+photos(e.images):'')+
+        '<div class="foot"><span class="time">'+tstr(e.ts)+'</span>'+
+        '<button data-remote-site="'+esc(e.site_id)+'"'+(e.mall_id?' data-remote-mall="'+esc(e.mall_id)+'"':'')+'>查看电脑 / 接管处理</button><button data-id="'+e.id+'">已处理</button></div></div>';
+    }).join('');
+    box.querySelectorAll('button[data-id]').forEach(function(b){
+      b.onclick = async function(){
+        var id = b.dataset.id, actingToken=K, actingVersion=queryVersion;
+        try {
+          var resp=await fetch(q('/api/alert/resolve'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:Number(id)})});
+          var result=await resp.json();if(actingToken!==K||actingVersion!==queryVersion)return;
+          if(!result.ok){toast(result.error||'标记处理失败');return;}
+          resolvedHere.add(String(id));
+          try { sessionStorage.setItem('yj_resolved_events_v2',JSON.stringify(Array.from(resolvedHere).slice(-300))); }catch(e){}
+          stopAlarm();
+          pendingAlarmCount=0; await load(true);
+        }catch(e){toast('网络错误，处理状态未同步');}
+      };
+    });
+  }
+
+  function afsDetailLine(label,value){
+    return value?'<b>'+esc(label)+'：</b>'+esc(value)+'<br>':'';
+  }
+  function afsCloseTime(ts){
+    if(!Number.isFinite(ts)||ts<=0)return '';
+    var d=new Date(ts*1000);
+    if(!Number.isFinite(d.getTime()))return '';
+    return d.toLocaleString('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  }
+  function afsDetailFacts(it){
+    var refunded=refundSucceeded(it);
+    var archived=Number(it.handle_status)===2||!!it.record_complete;
+    var rawRule=String(it.expire_desc||'').trim();
+    var rule=rawRule;
+    if(rawRule.includes('${time}')){
+      var seconds=archived?0:left(it);
+      rule=seconds>0?rawRule.replace(/\$\{time\}/g,cdText(seconds)):'';
+    }
+    var handler=String(it.handler||'').trim();
+    var source=it.refund_origin==='platform'&&refunded?'平台退款':'';
+    var completed=refunded?afsDetailLine('退款完成时间',afsCloseTime(it.closed_at)):'';
+    var nextStep=refunded&&/^(未发货退款|仅退款|退款不退货)$/.test(String(it.type_name||'').trim())?afsDetailLine('退货要求','无需退货'):'';
+    return completed+nextStep+afsDetailLine('处理来源',source)+
+      ((!archived&&rule)?afsDetailLine('处理时限',rule):'')+
+      (handler&&!/^(?:未处理|未知|--?|—)$/.test(handler)?afsDetailLine('预警经办人',handler):'');
+  }
+  function renderAfs(items){
+    var box = document.getElementById('afsList');
+    var pendingCount=Number((afsMeta.summary||{}).pending)||0;
+    var filter=document.getElementById('afsFilter').value;
+    var successCount=Number(afsMeta.success_count)||0;
+    var successButton=document.getElementById('afsRefundSuccess');
+    successButton.textContent='退款成功 · '+successCount+' 单';successButton.disabled=filter==='refund_success';
+    var n=Number(afsMeta.total)||0;
+    document.getElementById('afsbanner').className='afsbanner'+(pendingCount?' on':'');
+    document.getElementById('afscnt').textContent=pendingCount;
+    document.getElementById('afsBadge').textContent=n+' 单';
+    if(!n){
+      box.innerHTML = '<div class="empty">'+(filter==='pending'&&successCount?'暂无待处理售后，可点上方「退款成功」查看已完成记录。':'当前筛选下没有售后记录')+'</div>';
+      return;
+    }
+    box.innerHTML = items.map(function(it, i){
+      var s = left(it);
+      var hot = s>0 && s < 24*3600;   // 24 小时内要逾期的标红
+      var hs = Number(it.handle_status);
+      var locked = hs===1 || hs===2 || !!it.record_complete || it.refund_origin==='platform';
+      if(locked) s=0;
+      var resBadge = '';
+      if(hs===1) resBadge = '<span class="res">已下指令，等电脑执行</span>';
+      if(hs===2) resBadge='<span class="res">'+(refundSucceeded(it)?'退款已完成':'历史记录')+'</span>';
+      if(it.refund_origin==='platform') resBadge='<span class="res">平台已处理</span>';
+      if(hs===3) resBadge = '<span class="res bad">执行失败：'+esc(it.handle_msg||'')+'</span>';
+      return '<div class="afs'+(hot?' urgent':'')+'" data-i="'+i+'">'+
+        '<div class="hd">'+
+          '<span class="shop">'+esc(it.shop_name||'')+'</span>'+
+          '<span class="tag">'+esc(it.type_name||'售后')+'</span>'+
+          '<span class="tag warn">'+esc(it.title||'')+'</span>'+
+          (hot?'<span class="tag red">快超时</span>':'')+
+          (s?'<span class="cd'+(hot?' hot':'')+'" data-cd="'+it.afs_id+'">剩 '+cdText(s)+'</span>':'')+
+        '</div>'+
+        '<div class="bd">'+
+          (it.thumb?'<img class="pic" src="'+esc(it.thumb)+'" loading="lazy">':'')+
+          '<div class="info">'+
+            '<div class="gname">'+esc(it.goods_name||'')+'</div>'+
+            '<div class="meta">'+
+              (it.goods_spec?'规格：'+esc(it.goods_spec)+' × '+(it.goods_num||1)+'<br>':'')+
+              '退款 <span class="money">'+yuan(it.refund)+'</span>'+
+              (it.order_amount?' （订单 '+yuan(it.order_amount)+'）':'')+
+              '<br>原因：'+esc(it.reason||'-')+' · 单号 '+esc(it.order_sn||'')+
+              (it.reverse_tracking?'<br>退回快递：'+esc(it.reverse_tracking):'')+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        photos(it.images)+
+        '<div class="more'+(openDetails.has(String(it.afs_id))?' on':'')+'" id="more-'+esc(it.afs_id)+'">'+
+          '<b>售后编码：</b>'+esc(it.afs_id)+'<br>'+
+          '<b>申请时间：</b>'+(it.created_at?tstr(it.created_at):'-')+'<br>'+
+          afsDetailFacts(it)+
+          (it.handle_msg?'<b>执行结果：</b>'+esc(it.handle_msg)+'<br>':'')+
+          (hs===3?'<span style="color:#ff9f9f">电脑端执行失败，请到店铺后台手工处理，或让客户重新点击「同意退款」重试。</span>':'')+
+        '</div>'+
+        '<div class="ft">'+
+          (locked?'':'<button class="ok" data-agree="'+esc(it.afs_id)+'">同意退款</button>'+
+          '<button class="ghost" data-reject="'+esc(it.afs_id)+'">驳回</button>')+
+          '<button class="ghost" data-more="'+esc(it.afs_id)+'">详情</button>'+
+          '<span class="sp"></span>'+resBadge+
+        '</div>'+
+      '</div>';
+    }).join('');
+
+    box.querySelectorAll('[data-agree]').forEach(function(b){
+      b.onclick = function(){ ask(b.dataset.agree, 'agree'); };
+    });
+    box.querySelectorAll('[data-reject]').forEach(function(b){
+      b.onclick = function(){ ask(b.dataset.reject, 'reject'); };
+    });
+    box.querySelectorAll('[data-more]').forEach(function(b){
+      b.onclick = function(){
+        var el = document.getElementById('more-' + b.dataset.more);
+        if(el){var id=String(b.dataset.more);if(openDetails.has(id))openDetails.delete(id);else openDetails.add(id);el.className='more'+(openDetails.has(id)?' on':'');}
+      };
+    });
+  }
+
+  // 每秒刷倒计时，不用重新请求
+  setInterval(function(){
+    document.querySelectorAll('[data-cd]').forEach(function(el){
+      var id = el.dataset.cd;
+      for(var i=0;i<AFS.length;i++){
+        if(String(AFS[i].afs_id)===id){
+          var s = left(AFS[i]);
+          el.textContent = s ? ('剩 '+cdText(s)) : '已到处理时限';
+          el.className = 'cd' + (s>0 && s<24*3600 ? ' hot' : '');
+          break;
+        }
+      }
+    });
+  }, 1000);
+
+  var pending = null;
+  function ask(afsId, action){
+    var it = null;
+    for(var i=0;i<AFS.length;i++){ if(String(AFS[i].afs_id)===String(afsId)) { it=it||AFS[i]; } }
+    if(!it || [1,2].indexOf(Number(it.handle_status))>=0 || it.record_complete || it.refund_origin==='platform') return;
+    pending = {id: afsId, action: action};
+    document.getElementById('dlgTitle').textContent = action==='agree' ? '确认同意退款' : '确认驳回退款';
+    document.getElementById('dlgBody').innerHTML =
+      '店铺：' + esc(it.shop_name||'') + '<br>' +
+      '商品：' + esc(it.goods_name||'') + '<br>' +
+      '退款金额：<span style="color:#ffb4b4;font-weight:600">' + yuan(it.refund) + '</span><br>' +
+      (action==='agree'
+        ? '确认后由这台店铺所在的电脑执行「同意退款」，钱会退回买家。'
+        : '驳回需要填写理由，电脑端会打开发起驳回，可能还需要补一句说明。');
+    document.getElementById('mask').className = 'mask on';
+  }
+  document.getElementById('dlgCancel').onclick = function(){
+    document.getElementById('mask').className = 'mask';
+    pending = null;
+  };
+  document.getElementById('dlgOk').onclick = async function(){
+    if(!pending) return;
+    var p = pending, actingToken=K, actingVersion=queryVersion;
+    document.getElementById('mask').className = 'mask';
+    pending = null;
+    try {
+      var r = await fetch(q('/api/aftersale/cmd'), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({afs_id: p.id, action: p.action})
+      });
+      var j = await r.json();
+      if(actingToken!==K||actingVersion!==queryVersion)return;
+      toast(j.ok ? '已下发，电脑端马上执行（约 10 秒）' : ('下发失败：' + (j.error||'')));
+      load(true);
+    }catch(e){ toast('网络错误'); }
+  };
+
+  (function init(){
+    if(K){ document.getElementById('me').textContent = NAME; showMain(); load(); }
+    else showLogin();
+  })();
+  setInterval(function(){ if(K) load(); }, 5000);
+})();
+</script>
+<script src="/remote/boss_remote.js?v=2026.11.13.1"></script></body>
+</html>
